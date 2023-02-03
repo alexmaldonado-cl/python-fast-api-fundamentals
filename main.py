@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Body, Request
+from fastapi import FastAPI, Body, Request, HTTPException
 from fastapi.responses import HTMLResponse
 
 app         = FastAPI()
@@ -63,7 +63,30 @@ def create_movie(id: int = Body(), title: str = Body(), overview: str = Body(), 
 	})
 	return movies
 
-async def create_movie(request: Request):
-	movie = await request.json()
-	movies.append(movie)
-	return movie
+# async def create_movie(request: Request):
+# 	movie = await request.json()
+# 	movies.append(movie)
+# 	return movie
+
+
+@app.put('/movies/{id}', tags=['movies'])
+def update_movie(id: int, title: str = Body(), overview: str = Body(), year: int = Body(), rating: float = Body(), category: str = Body()):
+	result = filter(lambda item : item['id'] == id, movies)
+	result = list(result)
+	# print(result[0])
+	if(result[0]):
+		result[0]["title"]    = title,
+		result[0]["overview"] = overview,
+		result[0]["year"]     = year,
+		result[0]["rating"]   = rating,
+		result[0]["category"] = category
+	return movies
+
+@app.delete('/movies/{id}', tags=['movies'])
+def delete_movie(id: int):
+	for index, item in enumerate(movies):
+		if item["id"] == id:
+			del movies[index]
+			return {'status': 'deleted movie'}
+	
+	raise HTTPException(status_code=404, detail="Movie not found")
