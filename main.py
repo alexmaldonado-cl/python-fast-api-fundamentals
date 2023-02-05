@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Body, Request, HTTPException
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+from typing import Optional
 
 app         = FastAPI()
 app.title   = 'My FastAPI App'
@@ -9,6 +11,16 @@ app.version = "0.0.1"
 #     "url": "https://github.com/alexmaldonado-cl/",
 #     "email": "alex.maldonado@outlook.com"
 # }
+
+class Movie(BaseModel):
+	id: Optional[int] = None
+	title: str
+	overview: str
+	year: int
+	rating: float
+	category: str
+
+
 
 movies = [
     {
@@ -52,15 +64,8 @@ def get_movies_by_category(category: str, year: int):
 	return result
 
 @app.post('/movies', tags=['movies'])
-def create_movie(id: int = Body(), title: str = Body(), overview: str = Body(), year: int = Body(), rating: float = Body(), category: str = Body()):
-	movies.append({
-		"id": id,
-		"title": title,
-		"overview": overview,
-		"year": year,
-		"rating": rating,
-		"category": category
-	})
+def create_movie(movie: Movie):
+	movies.append(movie)
 	return movies
 
 # async def create_movie(request: Request):
@@ -70,16 +75,16 @@ def create_movie(id: int = Body(), title: str = Body(), overview: str = Body(), 
 
 
 @app.put('/movies/{id}', tags=['movies'])
-def update_movie(id: int, title: str = Body(), overview: str = Body(), year: int = Body(), rating: float = Body(), category: str = Body()):
+def update_movie(id: int, movie: Movie):
 	result = filter(lambda item : item['id'] == id, movies)
 	result = list(result)
 	# print(result[0])
 	if(result[0]):
-		result[0]["title"]    = title,
-		result[0]["overview"] = overview,
-		result[0]["year"]     = year,
-		result[0]["rating"]   = rating,
-		result[0]["category"] = category
+		result[0]["title"]    = movie.title
+		result[0]["overview"] = movie.overview
+		result[0]["year"]     = movie.year
+		result[0]["rating"]   = movie.rating
+		result[0]["category"] = movie.category
 	return movies
 
 @app.delete('/movies/{id}', tags=['movies'])
