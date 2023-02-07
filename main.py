@@ -5,6 +5,9 @@ from typing import Optional, List
 from jwt_manager import create_token, validate_token
 from fastapi.security import HTTPBearer
 
+from config.database import Session, engine, Base
+from models.movie import Movie as MovieModel
+
 app         = FastAPI()
 app.title   = 'My FastAPI App'
 app.version = "0.0.1"
@@ -13,6 +16,8 @@ app.version = "0.0.1"
 #     "url": "https://github.com/alexmaldonado-cl/",
 #     "email": "alex.maldonado@outlook.com"
 # }
+
+Base.metadata.create_all(bind=engine)
 
 class JWTBearer(HTTPBearer):
     async def __call__(self, request: Request):
@@ -27,8 +32,8 @@ class User(BaseModel):
 
 class Movie(BaseModel):
 	id: Optional[int] = None
-	title: str = Field(min_length=5, max_length=15)
-	overview: str = Field(min_length=15, max_length=50)
+	title: str = Field(min_length=5, max_length=25)
+	overview: str = Field(min_length=15, max_length=150)
 	year: int = Field(le=2022)
 	rating: float
 	category: str
@@ -98,8 +103,12 @@ def get_movies_by_category(category: str = Query(min_length=5, max_length=15)):
 
 @app.post('/movies', tags=['movies'], response_model=dict, status_code=201)
 def create_movie(movie: Movie) -> dict:
-	movies.append(movie)
-	return JSONResponse(status_code=201, content={"message": "Pelicula registrada"})
+	db = Session()
+	new_movie = MovieModel(**movie.dict())
+	db.add(new_movie)
+	db.commit()
+	# movies.append(movie)
+	return JSONResponse(status_code=201, content={"message": "Movie registered successfully"})
 
 # async def create_movie(request: Request):
 # 	movie = await request.json()
