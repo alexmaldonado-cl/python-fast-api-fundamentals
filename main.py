@@ -7,6 +7,7 @@ from fastapi.security import HTTPBearer
 
 from config.database import Session, engine, Base
 from models.movie import Movie as MovieModel
+from fastapi.encoders import jsonable_encoder
 
 app         = FastAPI()
 app.title   = 'My FastAPI App'
@@ -85,21 +86,24 @@ def login(user: User):
 
 @app.get('/movies', tags=['movies'], response_model=List[Movie], status_code=200, dependencies=[Depends(JWTBearer())])
 def get_movies() -> List[Movie]:
-    return JSONResponse(status_code=200, content=movies)
+	db     = Session()
+	result = db.query(MovieModel).all()
+	return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 @app.get('/movies/{id}', tags=['movies'])
 def get_movie(id: int = Path(ge=1, le=2000)):
-	result = filter(lambda item : item['id'] == id, movies)
-	result = list(result)
-    
-	return JSONResponse(content=result)
+	db = Session()
+	result = db.query(MovieModel).filter(MovieModel.id == id).first()
+	if not result:
+		return JSONResponse(status_code=404, content={'message': 'Movie not found'})
+
+	return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 @app.get('/movies/', tags=['movies'], response_model=List[Movie], status_code=200)
 def get_movies_by_category(category: str = Query(min_length=5, max_length=15)):
-	result = filter(lambda item : item['category'] == category, movies)
-	result = list(result)
-    
-	return JSONResponse(status_code=200, content=result)
+	db     = Session()
+	result = db.query(MovieModel).filter(MovieModel.category == category).all()
+	return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 @app.post('/movies', tags=['movies'], response_model=dict, status_code=201)
 def create_movie(movie: Movie) -> dict:
